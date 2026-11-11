@@ -1,0 +1,15 @@
+{
+  "name": "GeologgIA Cuña 3D — Estabilidad de Cuñas en Taludes y Mapeo de Terreno",
+  "short_name": "GeologgIA Cuña",
+  "description": "Motor analítico 3D de equilibrio límite para estabilidad de cuñas en taludes rocosos, proyección estereográfica, simulación Monte Carlo y diseño de soporte en terreno. 100% Client-Side.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07090e",
+  "theme_color": "#07090e",
+  "lang": "es",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

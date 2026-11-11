@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeologgIA CUÑA 3D — Estabilidad de Cuñas en Taludes & Mapeo de Terreno</title>
+  <meta name="description" content="Software geotécnico 3D de equilibrio límite para análisis de estabilidad de cuñas en taludes rocosos, proyección estereográfica, simulación Monte Carlo y diseño de soporte en terreno. 100% Client-Side PWA.">
+  <meta name="theme-color" content="#07090e">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="js/vendor/three.min.js"></script>
+</head>
+<body>
+  <!-- Iconos SVG Locales -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></symbol>
+      <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></symbol>
+      <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18M12 3v18"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+      <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></symbol>
+    </defs>
+  </svg>
+
+  <div id="app">
+    <!-- ==================== BARRA LATERAL ==================== -->
+    <aside id="sidebar">
+      <div class="brand">
+        <div class="brand-header">
+          <span class="brand-logo-mark">GC</span>
+          <div class="brand-titles">
+            <h1 id="brand-title">GeologgIA <span>CUÑA</span></h1>
+            <p id="brand-tagline">Estabilidad de Cuñas 3D & Terreno PWA</p>
+          </div>
+        </div>
+        <div class="brand-status-pill">
+          <span class="status-dot"></span> 100% Client-Side · ISRM & Analytical Core
+        </div>
+        <div class="mode-tabs">
+          <button type="button" class="mode-btn on" data-ws="3d">
+            <svg class="ic"><use href="#i-box"/></svg> Visor 3D
+          </button>
+          <button type="button" class="mode-btn" data-ws="field">
+            <svg class="ic"><use href="#i-compass"/></svg> Terreno & Soporte
+          </button>
+          <button type="button" class="mode-btn" data-ws="stereo">
+            <svg class="ic"><use href="#i-target"/></svg> Estereonet & MC
+          </button>
+          <button type="button" class="mode-btn" data-ws="verify">
+            <svg class="ic"><use href="#i-shield"/></svg> Verificación
+          </button>
+        </div>
+      </div>
+
+      <!-- 1. GEOMETRÍA DEL TALUD Y BERMA -->
+      <div class="grp open" id="grp-slope">
+        <button class="grp-h" type="button">
+          <span>1. Geometría del Talud</span>
+          <span class="grp-chev">›</span>
+        </button>
+        <div class="grp-b">
+          <div class="sub-card">
+            <div class="sub-card-title">
+              <span>Cara del Banco (Slope Face)</span>
+              <span class="badge-slope">TALUD</span>
+            </div>
+            <div class="grid-3">
+              <div class="field">
+                <label for="slope-dip">Manteo (Dip °)</label>
+                <input type="number" id="slope-dip" value="60" min="10" max="90" step="0.5">
+              </div>
+              <div class="field">
+                <label for="slope-dipdir">Dip Dir (°)</label>
+                <input type="number" id="slope-dipdir" value="230" min="0" max="360" step="0.5">
+              </div>
+              <div class="field">
+                <label for="slope-height">Altura H (m)</label>
+                <input type="number" id="slope-height" value="6.7978" min="0.5" max="1000" step="0.1">
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="slope-gamma">Peso Unit. γ (MN/m³)</label>
+                <input type="number" id="slope-gamma" value="0.026" min="0.010" max="0.045" step="0.001">
+              </div>
+              <div class="field">
+                <label for="preset-select">Caso Rápido</label>
+                <select id="preset-select">
+                  <option value="VP-1.6">Priest Ej. 1 (FS=1.4966)</option>
+                  <option value="VP-1.7">Priest Ej. 2 Plano Único (FS=0.8493)</option>
+                  <option value="VP-1.3">Castillo Ankara Falla (FS=0.7123)</option>
+                  <option value="VP-1.1">Kovari & Fritz T35 (FS=1.0061)</option>
+                  <option value="VP-1.2B">Sismo Dinámico T30 (FS=1.0001)</option>
+                  <option value="VP-2.1A">Perno Pasivo 0.1MN (FS=1.0140)</option>
+                  <option value="VP-3.1B">Talud Inundado 10m (FS=2.4348)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card">
+            <div class="sub-card-title">
+              <span>Talud Superior / Berma (Upper Slope)</span>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="upper-dip">Manteo (Dip °)</label>
+                <input type="number" id="upper-dip" value="5" min="0" max="75" step="0.5">
+              </div>
+              <div class="field">
+                <label for="upper-dipdir">Dip Dir (°)</label>
+                <input type="number" id="upper-dipdir" value="225" min="0" max="360" step="0.5">
+              </div>
+            </div>
+            <div class="chk-row">
+              <label for="tc-enabled">Incluir Grieta de Tracción (Tension Crack)</label>
+              <input type="checkbox" id="tc-enabled">
+            </div>
+            <div id="tc-box" style="display:none" class="grid-2">
+              <div class="field">
+                <label for="tc-ratio">Fracción de Traza (0.2–0.95)</label>
+                <input type="number" id="tc-ratio" value="0.70" min="0.2" max="0.95" step="0.05">
+              </div>
+              <div class="field">
+                <label for="tc-dip">Dip Grieta (°)</label>
+                <input type="number" id="tc-dip" value="85" min="45" max="90" step="1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. DISCONTINUIDADES: JUNTA 1 Y JUNTA 2 -->
+      <div class="grp open" id="grp-joints">
+        <button class="grp-h" type="button">
+          <span>2. Discontinuidades (J1 & J2)</span>
+          <span class="grp-chev">›</span>
+        </button>
+        <div class="grp-b">
+          <!-- Junta 1 -->
+          <div class="sub-card">
+            <div class="sub-card-title">
+              <span>Familia / Discontinuidad 1</span>
+              <span class="badge-j1">JUNTA 1</span>
+            </div>
+            <div class="grid-3">
+              <div class="field">
+                <label for="j1-dip">Dip (°)</label>
+                <input type="number" id="j1-dip" value="47" min="1" max="89" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j1-dipdir">Dip Dir (°)</label>
+                <input type="number" id="j1-dipdir" value="203" min="0" max="360" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j1-model">Criterio</label>
+                <select id="j1-model">
+                  <option value="mohr-coulomb">Mohr-Coulomb</option>
+                  <option value="barton-bandis">Barton-Bandis</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-3" id="j1-mc-fields">
+              <div class="field">
+                <label for="j1-c">c (MPa)</label>
+                <input type="number" id="j1-c" value="0.010" min="0" max="10" step="0.005">
+              </div>
+              <div class="field">
+                <label for="j1-phi">Fricción φ (°)</label>
+                <input type="number" id="j1-phi" value="40" min="5" max="70" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j1-wav">Waviness (°)</label>
+                <input type="number" id="j1-wav" value="0" min="0" max="25" step="0.5">
+              </div>
+            </div>
+            <div class="grid-3" id="j1-bb-fields" style="display:none">
+              <div class="field">
+                <label for="j1-jrc">JRC (0–20)</label>
+                <input type="number" id="j1-jrc" value="10" min="0" max="20" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j1-jcs">JCS (MPa)</label>
+                <input type="number" id="j1-jcs" value="60" min="1" max="300" step="5">
+              </div>
+              <div class="field">
+                <label for="j1-phir">φr Residual (°)</label>
+                <input type="number" id="j1-phir" value="30" min="10" max="50" step="0.5">
+              </div>
+            </div>
+          </div>
+
+          <!-- Junta 2 -->
+          <div class="sub-card">
+            <div class="sub-card-title">
+              <span>Familia / Discontinuidad 2</span>
+              <span class="badge-j2">JUNTA 2</span>
+            </div>
+            <div class="grid-3">
+              <div class="field">
+                <label for="j2-dip">Dip (°)</label>
+                <input type="number" id="j2-dip" value="52" min="1" max="89" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j2-dipdir">Dip Dir (°)</label>
+                <input type="number" id="j2-dipdir" value="287" min="0" max="360" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j2-model">Criterio</label>
+                <select id="j2-model">
+                  <option value="mohr-coulomb">Mohr-Coulomb</option>
+                  <option value="barton-bandis">Barton-Bandis</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid-3" id="j2-mc-fields">
+              <div class="field">
+                <label for="j2-c">c (MPa)</label>
+                <input type="number" id="j2-c" value="0.020" min="0" max="10" step="0.005">
+              </div>
+              <div class="field">
+                <label for="j2-phi">Fricción φ (°)</label>
+                <input type="number" id="j2-phi" value="35" min="5" max="70" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j2-wav">Waviness (°)</label>
+                <input type="number" id="j2-wav" value="0" min="0" max="25" step="0.5">
+              </div>
+            </div>
+            <div class="grid-3" id="j2-bb-fields" style="display:none">
+              <div class="field">
+                <label for="j2-jrc">JRC (0–20)</label>
+                <input type="number" id="j2-jrc" value="10" min="0" max="20" step="0.5">
+              </div>
+              <div class="field">
+                <label for="j2-jcs">JCS (MPa)</label>
+                <input type="number" id="j2-jcs" value="60" min="1" max="300" step="5">
+              </div>
+              <div class="field">
+                <label for="j2-phir">φr Residual (°)</label>
+                <input type="number" id="j2-phir" value="30" min="10" max="50" step="0.5">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. PRESIÓN DE AGUA, SISMO Y CARGAS EXTERNAS -->
+      <div class="grp" id="grp-water">
+        <button class="grp-h" type="button">
+          <span>3. Agua, Sismo y Fuerzas</span>
+          <span class="grp-chev">›</span>
+        </button>
+        <div class="grp-b">
+          <div class="sub-card">
+            <div class="chk-row">
+              <label for="water-enabled"><b>Presión de Agua en Juntas (U₁, U₂)</b></label>
+              <input type="checkbox" id="water-enabled" checked>
+            </div>
+            <div id="water-box">
+              <div class="field" style="margin-bottom:7px">
+                <label for="water-mode">Modelo de Presión Hidrostática</label>
+                <select id="water-mode">
+                  <option value="custom_mean">Presión Media Directa (MPa)</option>
+                  <option value="percent_filled">% Llenado de Fisura (Peak Crest)</option>
+                </select>
+              </div>
+              <div class="grid-2" id="water-custom-fields">
+                <div class="field">
+                  <label for="water-u1">Presión J1 u₁ (MPa)</label>
+                  <input type="number" id="water-u1" value="0.005" min="0" max="5" step="0.001">
+                </div>
+                <div class="field">
+                  <label for="water-u2">Presión J2 u₂ (MPa)</label>
+                  <input type="number" id="water-u2" value="0.015" min="0" max="5" step="0.001">
+                </div>
+              </div>
+              <div class="grid-2" id="water-pct-fields" style="display:none">
+                <div class="field">
+                  <label for="water-pct">% Llenado Agua (0–100)</label>
+                  <input type="number" id="water-pct" value="50" min="0" max="100" step="5">
+                </div>
+                <div class="field">
+                  <label for="water-hu">Coeficiente Hu (0–1)</label>
+                  <input type="number" id="water-hu" value="1.0" min="0" max="1" step="0.1">
+                </div>
+              </div>
+            </div>
+
+            <div class="chk-row" style="margin-top:8px">
+              <label for="ponded-enabled"><b>Agua Empalsada en Pie de Talud (Ponded)</b></label>
+              <input type="checkbox" id="ponded-enabled">
+            </div>
+            <div class="grid-2" id="ponded-box" style="display:none">
+              <div class="field">
+                <label for="ponded-depth">Altura Agua Hw (m)</label>
+                <input type="number" id="ponded-depth" value="0" min="0" max="500" step="0.5">
+              </div>
+              <div class="field">
+                <label for="slope-face-type">Permeabilidad Talud</label>
+                <select id="slope-face-type">
+                  <option value="impervious">Impervious (Indep.)</option>
+                  <option value="pervious">Pervious (Acoplado)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-card">
+            <div class="chk-row">
+              <label for="seismic-enabled"><b>Carga Sísmica Pseudoestática (η = a/g)</b></label>
+              <input type="checkbox" id="seismic-enabled">
+            </div>
+            <div class="grid-2" id="seismic-box" style="display:none">
+              <div class="field">
+                <label for="seismic-eta">Coeficiente Sísmico η</label>
+                <input type="number" id="seismic-eta" value="0.15" min="0" max="1.0" step="0.01">
+              </div>
+              <div class="field">
+                <label for="seismic-mode">Dirección</label>
+                <select id="seismic-mode">
+                  <option value="horiz_sliding">Tendencia de Deslizamiento</option>
+                  <option value="custom">Azimut Personalizado</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="chk-row" style="margin-top:8px">
+              <label for="ext-enabled"><b>Fuerza Externa Puntual (Fundación / Sobrecarga)</b></label>
+              <input type="checkbox" id="ext-enabled" checked>
+            </div>
+            <div class="grid-3" id="ext-box">
+              <div class="field">
+                <label for="ext-mag">Fuerza (MN)</label>
+                <input type="number" id="ext-mag" value="0.180" min="0" max="100" step="0.01">
+              </div>
+              <div class="field">
+                <label for="ext-trend">Trend (°)</label>
+                <input type="number" id="ext-trend" value="168" min="0" max="360" step="1">
+              </div>
+              <div class="field">
+                <label for="ext-plunge">Plunge (°)</label>
+                <input type="number" id="ext-plunge" value="70" min="-90" max="90" step="1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. SOPORTE DE PERNOS Y SHOTCRETE -->
+      <div class="grp" id="grp-support">
+        <button class="grp-h" type="button">
+          <span>4. Pernos de Anclaje & Shotcrete</span>
+          <span class="grp-chev">›</span>
+        </button>
+        <div class="grp-b">
+          <div class="sub-card">
+            <div class="chk-row">
+              <label for="bolt-enabled"><b>Activar Pernos de Anclaje (Rockbolts)</b></label>
+              <input type="checkbox" id="bolt-enabled">
+            </div>
+            <div id="bolt-box" style="display:none">
+              <div class="field" style="margin-bottom:7px">
+                <label for="bolt-type">Tipo de Perno (Catálogo Geotécnico Estándar)</label>
+                <select id="bolt-type">
+                  <option value="mechanically_anchored">Anclaje Mecánico (0.10 MN)</option>
+                  <option value="grouted_dowel_100">Perno Lechada 100% (0.24 MN)</option>
+                  <option value="cable_bolt">Cable Bolt (0.20 MN)</option>
+                  <option value="split_set">Split Set (0.10 MN)</option>
+                  <option value="swellex">Swellex (0.10 MN)</option>
+                </select>
+              </div>
+              <div class="grid-3">
+                <div class="field">
+                  <label for="bolt-model">Modelo</label>
+                  <select id="bolt-model">
+                    <option value="passive">Pasivo</option>
+                    <option value="active">Activo</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="bolt-count">N° Pernos</label>
+                  <input type="number" id="bolt-count" value="2" min="1" max="200" step="1">
+                </div>
+                <div class="field">
+                  <label for="bolt-length">Longitud L (m)</label>
+                  <input type="number" id="bolt-length" value="8" min="1" max="50" step="0.5">
+                </div>
+              </div>
+              <div class="grid-3">
+                <div class="field">
+                  <label for="bolt-trend">Trend Azimut (°)</label>
+                  <input type="number" id="bolt-trend" value="50" min="0" max="360" step="1">
+                </div>
+                <div class="field">
+                  <label for="bolt-plunge">Plunge Inclin. (°)</label>
+                  <input type="number" id="bolt-plunge" value="15" min="-45" max="85" step="1">
+                </div>
+                <div class="field">
+                  <label for="bolt-eff">Eficiencia Coseno</label>
+                  <select id="bolt-eff">
+                    <option value="0">Desactivada</option>
+                    <option value="1">Cosine Tension/Shear</option>
+                  </select>
+                </div>
+              </div>
+              <div class="chk-row">
+                <label for="bolt-shear">Usar Resistencia al Corte Pura (Shear Strength)</label>
+                <input type="checkbox" id="bolt-shear">
+              </div>
+            </div>
+
+            <div class="chk-row" style="margin-top:8px">
+              <label for="sc-enabled"><b>Activar Capa de Shotcrete en Cara</b></label>
+              <input type="checkbox" id="sc-enabled">
+            </div>
+            <div class="grid-2" id="sc-box" style="display:none">
+              <div class="field">
+                <label for="sc-thick">Espesor (cm)</label>
+                <input type="number" id="sc-thick" value="7" min="2" max="40" step="1">
+              </div>
+              <div class="field">
+                <label for="sc-tau">Corte τ (MPa)</label>
+                <input type="number" id="sc-tau" value="0.50" min="0.1" max="5.0" step="0.1">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. EXPORTACIÓN Y REPORTES -->
+      <div class="grp" id="grp-export">
+        <button class="grp-h" type="button">
+          <span>5. Proyecto & Reporte Técnico</span>
+          <span class="grp-chev">›</span>
+        </button>
+        <div class="grp-b">
+          <div class="grid-2">
+            <button type="button" class="btn btn-ghost" id="btn-export-json">
+              <svg class="ic"><use href="#i-download"/></svg> Guardar JSON
+            </button>
+            <label class="btn btn-ghost" style="cursor:pointer">
+              <svg class="ic"><use href="#i-upload"/></svg> Cargar JSON
+              <input type="file" id="in-import-json" accept=".json" style="display:none">
+            </label>
+          </div>
+          <button type="button" class="btn btn-accent" id="btn-print-report" style="margin-top:6px">
+            Generar Ficha Técnica Imprimible / PDF
+          </button>
+          <a href="manual.html" target="_blank" class="btn btn-ghost" style="margin-top:6px;text-decoration:none">
+            <svg class="ic"><use href="#i-help"/></svg> Abrir Manual de Teoría y Verificación
+          </a>
+        </div>
+      </div>
+
+      <footer id="app-footer">
+        <div><strong id="brand-foot" style="color:var(--lx-ivory)">GeologgIA CUÑA 3D</strong> · <span id="brand-ver">v1.0 PWA</span></div>
+        <div id="brand-company">Desarrollado por Tecknologia · Diseñado por Geologgia Ltda.</div>
+      </footer>
+    </aside>
+
+    <!-- ==================== VIEWPORT PRINCIPAL ==================== -->
+    <main id="viewport">
+      <!-- Barra Superior de KPIs -->
+      <div id="hud-top">
+        <div class="hud-kpis">
+          <div class="kpi-pill fs-ok" id="kpi-fs-card">
+            <span class="k-lbl">Factor de Seguridad</span>
+            <span class="k-val" id="kpi-fs">1.4966</span>
+          </div>
+          <div class="kpi-pill">
+            <span class="k-lbl">Volumen / Peso</span>
+            <span class="k-val" id="kpi-vol">45.2 m³ · 120 t</span>
+          </div>
+          <div class="kpi-pill">
+            <span class="k-lbl">Línea Intersección I₁₂</span>
+            <span class="k-val" id="kpi-int">40.1° / 235°</span>
+          </div>
+          <div class="kpi-pill">
+            <span class="k-lbl">Modo Cinemático</span>
+            <span class="k-val" id="kpi-mode" style="font-size:13px">Juntas 1 y 2</span>
+          </div>
+        </div>
+
+        <div class="hud-toolbar">
+          <button type="button" class="tb-btn" id="btn-quad-view" title="Alternar entre Vista 3D y Cuádruple Vista CAD (Top/Front/Side/Persp)">
+            <svg class="ic"><use href="#i-grid"/></svg> 4 Vistas CAD
+          </button>
+          <button type="button" class="tb-btn" id="btn-toggle-xray" title="Alternar Rayos X / Transparencia del Talud para ver Pernos en el interior"><svg class="ic"><use href="#i-target"/></svg> Rayos X</button>
+          <button type="button" class="tb-btn active" id="btn-toggle-info-bar" title="Mostrar/Ocultar Panel de Detalle Analítico 3D"><svg class="ic"><use href="#i-grid"/></svg> Detalle 3D</button>
+          <button type="button" class="tb-btn active" id="btn-toggle-vectors" title="Mostrar/Ocultar Vectores 3D de Fuerza">
+            Vectores 3D
+          </button>
+          <button type="button" class="tb-btn" id="btn-fit" title="Centrar Cámara 3D">
+            Centrar
+          </button>
+          <button type="button" class="tb-btn" id="btn-capture" title="Capturar Imagen PNG del Modelo 3D">
+            <svg class="ic"><use href="#i-camera"/></svg> PNG
+          </button>
+          <button type="button" class="tb-btn" id="theme-btn" title="Alternar Modo Oscuro / Claro">
+            <svg class="ic"><use href="#i-sun"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Divisiones del Modo 4 Vistas CAD -->
+      <div id="quad-labels">
+        <div class="quad-line-v"></div>
+        <div class="quad-line-h"></div>
+        <span class="quad-tag" style="top:68px;left:16px">PLANTA (TOP VIEW)</span>
+        <span class="quad-tag" style="top:68px;left:calc(50% + 14px)">PERSPECTIVA 3D</span>
+        <span class="quad-tag" style="top:calc(50% + 12px);left:16px">FRENTE (FRONT VIEW)</span>
+        <span class="quad-tag" style="top:calc(50% + 12px);left:calc(50% + 14px)">PERFIL (SIDE VIEW)</span>
+      </div>
+
+      <!-- Lienzo WebGL 3D -->
+      <canvas id="canvas3d"></canvas>
+
+      <!-- Barra Inferior: Extracción de Cuña + InfoViewer -->
+      <div id="hud-bottom">
+        <div class="slide-control-card">
+          <button type="button" class="btn btn-ghost" id="btn-anim-wedge" style="width:auto;padding:6px 11px">
+            <svg class="ic"><use href="#i-zap"/></svg> Animar
+          </button>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--lx-cream)">
+              <span>Desplazamiento / Extracción de Cuña 3D</span>
+              <strong id="wedge-slide-val" style="font-family:var(--mono);color:var(--lx-gold)">18%</strong>
+            </div>
+            <input type="range" id="wedge-slide-range" min="0" max="1.2" step="0.02" value="0.18">
+          </div>
+        </div>
+
+        <div id="infoviewer-card">
+          <div class="info-header" id="info-toggle-header" title="Haga clic para ocultar o desplegar el Detalle Analítico">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="info-collapse-icon" id="info-collapse-chev">▾</span>
+              <h3 style="margin:0">Detalle Analítico 3D</h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span id="info-status-badge" class="pill-pass">ESTABLE</span>
+              <button type="button" class="info-toggle-btn" id="btn-toggle-infoviewer" title="Ocultar/Desplegar panel (Vista limpia)">
+                <svg class="ic" style="width:13px;height:13px"><use href="#i-check"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="info-content-wrap" id="info-content-wrap">
+            <table class="info-table" id="info-table-body"></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== WORKSPACE 2: TERRENO & SOPORTE ==================== -->
+      <section class="workspace-overlay" id="ws-field">
+        <div class="ws-header">
+          <div>
+            <h2>Módulo de Terreno: Mapeo de Familias, Buscador de Cuñas Críticas y Diseño de Malla</h2>
+            <p>Captura discontinuidades en el frente del banco, evalúa todas las combinaciones N(N-1)/2 y dimensiona el soporte requerido.</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn btn-warn" id="btn-compass-sensor" style="width:auto">
+              <svg class="ic"><use href="#i-compass"/></svg> Brújula Móvil (Sensor)
+            </button>
+            <button type="button" class="btn btn-ghost" id="btn-load-demo-field" style="width:auto">
+              Cargar Set Terreno Demo
+            </button>
+          </div>
+        </div>
+
+        <div class="ws-grid-2">
+          <!-- Columna Izquierda: Registro de Estaciones Estructurales -->
+          <div class="ws-card">
+            <h3>
+              <span>1. Registro de Discontinuidades en Frente de Banco</span>
+              <span id="compass-live-pill" style="font-family:var(--mono);font-size:11px;color:var(--lx-cream)">Sensor: Manual</span>
+            </h3>
+            <div class="grid-3">
+              <div class="field">
+                <label for="f-set">Set / ID</label>
+                <input type="text" id="f-set" value="J3">
+              </div>
+              <div class="field">
+                <label for="f-dip">Dip (°)</label>
+                <input type="number" id="f-dip" value="58" min="1" max="89">
+              </div>
+              <div class="field">
+                <label for="f-dipdir">Dip Dir (°)</label>
+                <input type="number" id="f-dipdir" value="172" min="0" max="360">
+              </div>
+            </div>
+            <div class="grid-3">
+              <div class="field">
+                <label for="f-phi">Fricción φ (°)</label>
+                <input type="number" id="f-phi" value="34" min="10" max="65">
+              </div>
+              <div class="field">
+                <label for="f-c">Cohesión c (MPa)</label>
+                <input type="number" id="f-c" value="0.008" min="0" max="5" step="0.002">
+              </div>
+              <div class="field" style="justify-content:flex-end">
+                <button type="button" class="btn btn-accent" id="btn-add-field-plane">+ Agregar Plano</button>
+              </div>
+            </div>
+
+            <div style="max-height:210px;overflow-y:auto;margin-top:10px">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Dip (°)</th>
+                    <th>DipDir (°)</th>
+                    <th>c (MPa)</th>
+                    <th>φ (°)</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="field-planes-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Optimizador de Soporte para Terreno -->
+          <div class="ws-card">
+            <h3>
+              <span>2. Dimensionamiento Rápido de Soporte en Terreno</span>
+              <span class="badge-slope">DISEÑO</span>
+            </h3>
+            <p style="font-size:11.5px;color:var(--lx-cream);margin-bottom:10px">
+              Calcula automáticamente el tonelaje de anclaje, número de pernos, malla sistemática S×S y espesor de shotcrete para alcanzar el Factor de Seguridad exigido en la cuña activa.
+            </p>
+            <div class="grid-3">
+              <div class="field">
+                <label for="opt-target-fs">FS de Diseño Objetivo</label>
+                <input type="number" id="opt-target-fs" value="1.50" min="1.05" max="3.0" step="0.05">
+              </div>
+              <div class="field">
+                <label for="opt-bolt-type">Perno Seleccionado</label>
+                <select id="opt-bolt-type">
+                  <option value="grouted_dowel_100">Lechada 100% (24.5 t)</option>
+                  <option value="cable_bolt">Cable Bolt (20.4 t)</option>
+                  <option value="mechanically_anchored">Mecánico (10.2 t)</option>
+                  <option value="swellex">Swellex (10.2 t)</option>
+                  <option value="split_set">Split Set (10.2 t)</option>
+                </select>
+              </div>
+              <div class="field" style="justify-content:flex-end">
+                <button type="button" class="btn btn-accent" id="btn-apply-opt-support">Aplicar al Modelo 3D</button>
+              </div>
+            </div>
+            <div id="opt-support-summary" class="sub-card" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <!-- Tabla de Combinaciones Críticas N(N-1)/2 -->
+        <div class="ws-card" style="margin-top:16px">
+          <h3>
+            <span>3. Matriz de Combinaciones Cinemáticas (Combination Analyzer)</span>
+            <span id="combo-stats-badge" class="pill-warn">Evaluando pares...</span>
+          </h3>
+          <div style="max-height:240px;overflow-y:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Par de Juntas</th>
+                  <th>Orientación J1 / J2</th>
+                  <th>Plunge / Trend I₁₂</th>
+                  <th>Volumen (m³)</th>
+                  <th>Peso (t)</th>
+                  <th>Modo de Falla</th>
+                  <th>Factor de Seguridad</th>
+                  <th>Visor 3D</th>
+                </tr>
+              </thead>
+              <tbody id="combo-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== WORKSPACE 3: ESTEREONET & MONTE CARLO ==================== -->
+      <section class="workspace-overlay" id="ws-stereo">
+        <div class="ws-header">
+          <div>
+            <h2>Proyección Estereográfica Hemisferio Inferior & Análisis Probabilístico Monte Carlo</h2>
+            <p>Falsilla Equiangular (Wulff) / Equiareal (Schmidt) en tiempo real y distribución de Probabilidad de Falla (Pf).</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="stereo-proj-select" style="padding:7px 10px;border-radius:10px;background:var(--lx-panel2);color:var(--lx-ivory);border:1px solid var(--lx-line2)">
+              <option value="wulff">Proyección Equiangular (Wulff)</option>
+              <option value="schmidt">Proyección Equiareal (Schmidt)</option>
+            </select>
+            <button type="button" class="btn btn-accent" id="btn-run-mc" style="width:auto">
+              Ejecutar Monte Carlo (2,000 iter.)
+            </button>
+          </div>
+        </div>
+
+        <div class="ws-grid-2">
+          <div class="ws-card" style="display:flex;flex-direction:column;align-items:center">
+            <h3 style="width:100%">
+              <span>Falsilla Estereográfica Interactiva</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--lx-cream)">Hemisferio Inferior</span>
+            </h3>
+            <canvas id="stereonet-canvas" style="width:370px;height:370px;max-width:100%"></canvas>
+          </div>
+
+          <div class="ws-card">
+            <h3>
+              <span>Simulación de Confiabilidad Geotécnica (Monte Carlo)</span>
+              <span id="mc-pf-badge" class="pill-pass">Pf = 0.0%</span>
+            </h3>
+            <div class="grid-3">
+              <div class="field">
+                <label for="mc-std-dip">Desv. Dip ±σ (°)</label>
+                <input type="number" id="mc-std-dip" value="3.0" min="0.5" max="15" step="0.5">
+              </div>
+              <div class="field">
+                <label for="mc-std-dipdir">Desv. DipDir ±σ (°)</label>
+                <input type="number" id="mc-std-dipdir" value="5.0" min="1" max="25" step="0.5">
+              </div>
+              <div class="field">
+                <label for="mc-std-phi">Desv. Fricción ±σ (°)</label>
+                <input type="number" id="mc-std-phi" value="2.5" min="0.5" max="10" step="0.5">
+              </div>
+            </div>
+            <canvas id="mc-hist-canvas" style="width:100%;height:215px;margin-top:8px"></canvas>
+            <div id="mc-stats-grid" class="grid-3" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== WORKSPACE 4: SUITE DE VERIFICACIÓN Geomecánica Analítica ==================== -->
+      <section class="workspace-overlay" id="ws-verify">
+        <div class="ws-header">
+          <div>
+            <h2>Suite de Validación Analítica Internacional — Literatura Científica Geotécnica</h2>
+            <p>Auditoría matemática automatizada contra los 12 casos clásicos publicados en la literatura científica (Kovári & Fritz 1976, Kumsar et al. 2000, Priest 1993, Hoek & Bray 1981).</p>
+          </div>
+          <button type="button" class="btn btn-accent" id="btn-run-verify" style="width:auto">
+            <svg class="ic"><use href="#i-check"/></svg> Re-ejecutar Auditoría Completa
+          </button>
+        </div>
+
+        <div class="ws-card">
+          <h3>
+            <span>Resultados de Paridad Analítica (Benchmarks Académicos Internacionales)</span>
+            <span id="verify-summary-pill" class="pill-pass">12 / 12 APROBADOS (100% EXACTITUD)</span>
+          </h3>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Problema de Verificación</th>
+                  <th>Ref. Manual</th>
+                  <th>FS Analítico Ref.</th>
+                  <th>FS GeologgIA</th>
+                  <th>Error |ΔFS|</th>
+                  <th>Estado</th>
+                  <th>Cargar en 3D</th>
+                </tr>
+              </thead>
+              <tbody id="verify-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/wedge-engine.js"></script>
+  <script src="js/viewer3d.js"></script>
+  <script src="js/stereonet.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

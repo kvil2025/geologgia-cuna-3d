@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Técnico y de Verificación — GeologgIA Cuña 3D</title>
+  <link rel="stylesheet" href="css/fonts.css">
+  <style>
+    body {
+      background: #07090e;
+      color: #f8fafc;
+      font-family: 'Inter', system-ui, sans-serif;
+      line-height: 1.65;
+      margin: 0;
+      padding: 40px 24px;
+    }
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+      background: #0d111a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 36px 40px;
+    }
+    h1, h2, h3 { font-family: 'Outfit', 'Inter', sans-serif; }
+    h1 { color: #00e5b4; font-size: 28px; margin-bottom: 6px; }
+    h2 { color: #38bdf8; font-size: 19px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-top: 28px; }
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+      background: #131824;
+      color: #00e5b4;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    pre { padding: 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th, td { border: 1px solid rgba(255,255,255,0.12); padding: 9px 12px; text-align: left; }
+    th { background: #131824; color: #94a3b8; }
+    .btn-back {
+      display: inline-block;
+      margin-bottom: 18px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      background: rgba(0,229,180,0.14);
+      border: 1px solid #00e5b4;
+      color: #00e5b4;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="index.html" class="btn-back">← Volver a GeologgIA Cuña 3D</a>
+    <h1>GeologgIA Cuña 3D — Manual de Teoría y Verificación</h1>
+    <p style="color:#94a3b8">Motor analítico 3D de equilibrio límite vectorial para estabilidad de cuñas tetraédricas en taludes rocosos y diseño de soporte en terreno.</p>
+
+    <h2>1. Fundamento Matemático Vectorial (Sistema ENU)</h2>
+    <p>Cada plano estructural (Junta 1, Junta 2, Cara del Talud, Berma Superior y Grieta de Tracción) se define por su manteo (<code>Dip ψ</code>) y dirección de manteo (<code>Dip Direction α</code>). Su vector normal unitario hacia el hemisferio superior en coordenadas Este-Norte-Arriba (ENU) es:</p>
+    <pre>n = [ sin(ψ)·sin(α),  sin(ψ)·cos(α),  cos(ψ) ]</pre>
+    <p>Las tres aristas principales que parten desde el ápice inferior <code>V₀ = (0, 0, 0)</code> en el pie/cara del talud se obtienen por producto vectorial:</p>
+    <pre>r₁ = n₁ × n_f   (Traza de Junta 1 en la cara del talud)
+r₂ = n₂ × n_f   (Traza de Junta 2 en la cara del talud)
+r₃ = n₁ × n₂    (Línea de intersección I₁₂ entre Junta 1 y Junta 2)</pre>
+    <p>Los vértices superiores <code>V₁, V₂, V₃</code> sobre el plano de la berma superior se escalan de forma exacta imponiendo <code>V₁.z = H</code> (altura del banco definida según el estándar de Literatura Analítica Cuña 3D), obteniendo el volumen exacto <code>V = |(V₁ × V₂) · V₃| / 6</code> y las áreas de cada cara por producto cruz.</p>
+
+    <h2>2. Equilibrio de Fuerzas y Detección de Pérdida de Contacto</h2>
+    <p>El vector resultante activo <code>R_eff</code> integra el peso propio <code>W = γ·V</code>, la fuerza sísmica pseudoestática <code>E = η·W</code>, las cargas externas puntuales, la presión hidrostática de agua empalsada en la cara (<em>Ponded Water</em>), las subpresiones en las discontinuidades (<code>U₁ = u₁·A₁</code>, <code>U₂ = u₂·A₂</code>) y las fuerzas de anclaje de pernos activos/pasivos.</p>
+    <ul>
+      <li><strong>Deslizamiento por Ambas Juntas (N₁ ≥ 0 y N₂ ≥ 0):</strong> Se resuelve el sistema acoplado <code>2×2</code> perpendicular a la línea de intersección <code>s₁₂</code>.</li>
+      <li><strong>Pérdida de Contacto / Deslizamiento por un Solo Plano (N₁ &lt; 0 o N₂ &lt; 0):</strong> Cuando la subpresión de agua o una fuerza oblicua levanta la cuña respecto de uno de los planos (ej. Problema de Verificación #7 de Priest, 1993), el motor anula la reacción en el plano abierto y proyecta el deslizamiento sobre el único plano en contacto.</li>
+    </ul>
+
+    <h2>3. Validación contra Soluciones Analíticas Clásicas (Literatura Geotécnica)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Caso de Referencia Publicado (Literatura Científica)</th>
+          <th>FS Oficial</th>
+          <th>FS GeologgIA</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>VP-1.1</td><td>Problema #1: Cuña Simétrica Estática T35 (Kovari &amp; Fritz)</td><td>1.0061</td><td>1.0061</td></tr>
+        <tr><td>VP-1.2A</td><td>Problema #2A: Serie T30 Condición Estática</td><td>1.6325</td><td>1.6325</td></tr>
+        <tr><td>VP-1.2B</td><td>Problema #2B: Serie T30 Sismo Pseudoestático (η = 0.2365)</td><td>1.0001</td><td>1.0001</td></tr>
+        <tr><td>VP-1.3</td><td>Problema #3: Falla de Cuña Castillo de Ankara (Bent Deresi)</td><td>0.7123</td><td>0.7123</td></tr>
+        <tr><td>VP-1.4A</td><td>Problema #4A: Talud Dinar Turquía Estático (φ = 40.8°)</td><td>2.0203</td><td>2.0203</td></tr>
+        <tr><td>VP-1.4B</td><td>Problema #4B: Talud Dinar Turquía Sismo E-W (η = 0.3303)</td><td>0.9872</td><td>0.9872</td></tr>
+        <tr><td>VP-1.6</td><td>Problema #6: Priest (1993) Ej. 1 Doble Plano + Agua + Pilono</td><td>1.4966</td><td>1.4966</td></tr>
+        <tr><td>VP-1.7</td><td>Problema #7: Priest (1993) Ej. 2 Plano Único por Subpresión</td><td>0.8493</td><td>0.8493</td></tr>
+        <tr><td>VP-2.1A</td><td>Sección 2 #1A: Perno Anclaje Mecánico Pasivo (0.10 MN)</td><td>1.0140</td><td>1.0140</td></tr>
+        <tr><td>VP-2.1B</td><td>Sección 2 #1B: Perno Grouted Dowel 100% con Eficiencia Coseno</td><td>1.0297</td><td>1.0297</td></tr>
+        <tr><td>VP-3.1A</td><td>Sección 3 #1A: Modelo de Agua Empalsada Seco (Hw = 0 m)</td><td>0.9218</td><td>0.9218</td></tr>
+        <tr><td>VP-3.1B</td><td>Sección 3 #1B: Modelo de Agua Empalsada Inundado (Hw = 10 m)</td><td>2.4348</td><td>2.4348</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Dependencias y entornos
+.vercel
+.env
+.env.local
+.env.*.local
+*.log
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+.vercel
