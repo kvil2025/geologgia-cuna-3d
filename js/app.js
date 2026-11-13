@@ -526,6 +526,19 @@
     });
   }
 
+  function setMobileView(viewName) {
+    const appEl = $('app');
+    if (!appEl) return;
+    appEl.classList.remove('mobile-view-split', 'mobile-view-3d', 'mobile-view-params');
+    appEl.classList.add('mobile-view-' + viewName);
+    document.querySelectorAll('.mob-view-btn').forEach((b) => {
+      b.classList.toggle('active', b.getAttribute('data-view') === viewName);
+    });
+    if (viewer3d && typeof viewer3d._onResize === 'function') {
+      setTimeout(() => viewer3d._onResize(), 80);
+    }
+  }
+
   function switchWorkspace(wsName) {
     document.querySelectorAll('.mode-btn').forEach((b) => {
       b.classList.toggle('on', b.getAttribute('data-ws') === wsName);
@@ -534,6 +547,13 @@
       const sec = $('ws-' + id);
       if (sec) sec.classList.toggle('active', id === wsName);
     });
+    // En móviles, si se abre un workspace overlay (Terreno, Estereonet o Verificación), asegurar que el viewport sea visible
+    if (wsName !== '3d' && window.innerWidth <= 960) {
+      const appEl = $('app');
+      if (appEl && appEl.classList.contains('mobile-view-params')) {
+        setMobileView('3d');
+      }
+    }
     if (wsName === 'stereo') {
       setTimeout(() => refreshStereonetAndMC(), 40);
     }
@@ -622,6 +642,13 @@
     document.querySelectorAll('.grp-h').forEach((btn) => {
       btn.addEventListener('click', () => {
         btn.parentElement.classList.toggle('open');
+      });
+    });
+
+    // Barra de Navegación Móvil (Dividido, Solo 3D, Solo Parámetros)
+    document.querySelectorAll('.mob-view-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setMobileView(btn.getAttribute('data-view'));
       });
     });
 

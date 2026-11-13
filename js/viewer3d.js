@@ -178,10 +178,10 @@
     }
 
     _onResize() {
-      if (!this.canvas || !this. canvas.parentElement) return;
+      if (!this.canvas || !this.canvas.parentElement) return;
       const rect = this.canvas.parentElement.getBoundingClientRect();
-      const w = Math.max(300, rect.width);
-      const h = Math.max(260, rect.height);
+      const w = Math.max(80, Math.floor(rect.width));
+      const h = Math.max(80, Math.floor(rect.height));
       this.renderer.setSize(w, h, false);
       this.camera.aspect = w / h;
       this.camera.updateProjectionMatrix();

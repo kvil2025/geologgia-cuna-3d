@@ -27,7 +27,7 @@ Aplicación web progresiva (**PWA 100% Client-Side & Offline-First**) para el an
 Haz doble clic en `start_wedge.bat` o ejecuta:
 
 ```bash
-python -m http.server 8095
+python -m http.server 8098
 ```
 
-Y abre `http://localhost:8095` en cualquier navegador de escritorio o móvil.
+Y abre `http://localhost:8098` en cualquier navegador de escritorio o móvil.

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>GeologgIA CUÑA 3D — Estabilidad de Cuñas en Taludes & Mapeo de Terreno</title>
   <meta name="description" content="Software geotécnico 3D de equilibrio límite para análisis de estabilidad de cuñas en taludes rocosos, proyección estereográfica, simulación Monte Carlo y diseño de soporte en terreno. 100% Client-Side PWA.">
   <meta name="theme-color" content="#07090e">
@@ -32,7 +32,20 @@
     </defs>
   </svg>
 
-  <div id="app">
+  <div id="app" class="mobile-view-split">
+    <!-- Barra Superior de Navegación Móvil (Solo visible en pantallas pequeñas) -->
+    <nav id="mobile-view-bar" class="mobile-only" aria-label="Navegación Móvil">
+      <button type="button" class="mob-view-btn active" data-view="split" title="Vista dividida 3D y Parámetros">
+        <svg class="ic"><use href="#i-grid"/></svg> Dividido
+      </button>
+      <button type="button" class="mob-view-btn" data-view="3d" title="Ampliar Visor 3D a pantalla completa">
+        <svg class="ic"><use href="#i-box"/></svg> Visor 3D
+      </button>
+      <button type="button" class="mob-view-btn" data-view="params" title="Ver controles de Geometría y Parámetros">
+        <svg class="ic"><use href="#i-target"/></svg> Parámetros
+      </button>
+    </nav>
+
     <!-- ==================== BARRA LATERAL ==================== -->
     <aside id="sidebar">
       <div class="brand">
@@ -612,7 +625,7 @@
               </div>
             </div>
 
-            <div style="max-height:210px;overflow-y:auto;margin-top:10px">
+            <div style="max-height:210px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px" class="table-responsive">
               <table class="data-table">
                 <thead>
                   <tr>
@@ -667,7 +680,7 @@
             <span>3. Matriz de Combinaciones Cinemáticas (Combination Analyzer)</span>
             <span id="combo-stats-badge" class="pill-warn">Evaluando pares...</span>
           </h3>
-          <div style="max-height:240px;overflow-y:auto">
+          <div style="max-height:240px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch" class="table-responsive">
             <table class="data-table">
               <thead>
                 <tr>
