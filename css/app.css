@@ -573,7 +573,7 @@ body.light-mode #viewport {
   color: var(--lx-gold);
 }
 
-/* --- Rosa de los Vientos / Brújula 3D Flotante --- */
+/* --- Rosa de los Vientos / Brújula 3D Flotante (Arrastrable / Draggable) --- */
 #compass-rose-3d {
   position: absolute;
   top: 76px;
@@ -589,14 +589,21 @@ body.light-mode #viewport {
   border-radius: 16px;
   padding: 8px 10px;
   box-shadow: var(--lx-shadow);
-  z-index: 11;
-  cursor: pointer;
+  z-index: 25;
+  cursor: grab;
   user-select: none;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  touch-action: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#compass-rose-3d:active, #compass-rose-3d.dragging {
+  cursor: grabbing;
+  border-color: var(--lx-gold);
+  box-shadow: 0 0 20px rgba(0, 229, 180, 0.45);
+  transform: scale(1.04);
 }
 
 #compass-rose-3d:hover {
-  transform: translateY(-2px) scale(1.03);
   border-color: var(--lx-gold);
   box-shadow: 0 0 16px rgba(0, 229, 180, 0.25);
 }

@@ -748,15 +748,103 @@
       });
     }
 
-    // Clic en la Rosa de los Vientos para alinear automáticamente la vista al Norte (000°)
-    if ($('compass-rose-3d')) {
-      $('compass-rose-3d').addEventListener('click', () => {
-        if (!viewer3d) return;
-        // Coloca la cámara mirando exactamente hacia el Norte (-Z)
-        viewer3d.spherical.theta = 0;
-        viewer3d.spherical.phi = 1.05;
-        viewer3d._updateCameraPosition();
-      });
+    // Rosa de los Vientos 3D: Arrastrable / Draggable con soporte Mouse y Touch + Clic para Alinear al Norte
+    const compassEl = $('compass-rose-3d');
+    if (compassEl) {
+      let isDraggingCompass = false;
+      let hasDragged = false;
+      let startX = 0;
+      let startY = 0;
+      let origLeft = 0;
+      let origTop = 0;
+
+      // Recuperar posición guardada en localStorage si existe
+      try {
+        const savedPos = localStorage.getItem('geologgia_compass_pos');
+        if (savedPos) {
+          const { x, y } = JSON.parse(savedPos);
+          if (typeof x === 'number' && typeof y === 'number') {
+            compassEl.style.left = `${Math.max(10, Math.min(window.innerWidth - 80, x))}px`;
+            compassEl.style.top = `${Math.max(10, Math.min(window.innerHeight - 80, y))}px`;
+            compassEl.style.right = 'auto';
+            compassEl.style.bottom = 'auto';
+          }
+        }
+      } catch (err) {}
+
+      const onPointerDown = (e) => {
+        // Prevenir propagación al canvas 3D subyacente
+        e.stopPropagation();
+        isDraggingCompass = true;
+        hasDragged = false;
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        startX = clientX;
+        startY = clientY;
+
+        const rect = compassEl.getBoundingClientRect();
+        origLeft = rect.left;
+        origTop = rect.top;
+
+        compassEl.classList.add('dragging');
+        window.addEventListener('mousemove', onPointerMove, { passive: false });
+        window.addEventListener('touchmove', onPointerMove, { passive: false });
+        window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('touchend', onPointerUp);
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDraggingCompass) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+
+        if (Math.hypot(dx, dy) > 4) {
+          hasDragged = true;
+        }
+
+        const newLeft = Math.max(10, Math.min(window.innerWidth - compassEl.offsetWidth - 10, origLeft + dx));
+        const newTop = Math.max(10, Math.min(window.innerHeight - compassEl.offsetHeight - 10, origTop + dy));
+
+        compassEl.style.left = `${newLeft}px`;
+        compassEl.style.top = `${newTop}px`;
+        compassEl.style.right = 'auto';
+        compassEl.style.bottom = 'auto';
+      };
+
+      const onPointerUp = (e) => {
+        if (!isDraggingCompass) return;
+        isDraggingCompass = false;
+        compassEl.classList.remove('dragging');
+
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+        window.removeEventListener('touchend', onPointerUp);
+
+        // Si fue arrastrado, guardar la posición preferida del usuario
+        if (hasDragged) {
+          try {
+            const rect = compassEl.getBoundingClientRect();
+            localStorage.setItem('geologgia_compass_pos', JSON.stringify({ x: rect.left, y: rect.top }));
+          } catch (err) {}
+        } else {
+          // Si fue solo un clic limpio sin arrastre, alinear la cámara al Norte (000°)
+          if (viewer3d) {
+            viewer3d.spherical.theta = 0;
+            viewer3d.spherical.phi = 1.05;
+            viewer3d._updateCameraPosition();
+          }
+        }
+      };
+
+      compassEl.addEventListener('mousedown', onPointerDown);
+      compassEl.addEventListener('touchstart', onPointerDown, { passive: false });
     }
 
     $('btn-fit').addEventListener('click', () => {

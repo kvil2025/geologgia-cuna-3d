@@ -1,4 +1,4 @@
-const CACHE_NAME = 'geologgia-cuna-v1.2.0';
+const CACHE_NAME = 'geologgia-cuna-v1.3.0';
 const ASSETS = [
   './',
   './index.html',
@@ -7,12 +7,12 @@ const ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './css/fonts.css',
-  './css/app.css?v=1.2.0',
+  './css/app.css?v=1.3.0',
   './js/vendor/three.min.js',
   './js/wedge-engine.js',
-  './js/viewer3d.js?v=1.2.0',
+  './js/viewer3d.js?v=1.3.0',
   './js/stereonet.js',
-  './js/app.js?v=1.2.0'
+  './js/app.js?v=1.3.0'
 ];
 
 self.addEventListener('install', (event) => {
