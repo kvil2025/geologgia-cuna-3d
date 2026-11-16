@@ -17,6 +17,7 @@
       this.showVectors = true;
       this.showBolts = true;
       this.showWireframe = true;
+      this.showDimensions = true;
       this.xrayMode = false;
       this.displacement = 0.18; // Desplazamiento inicial leve para distinguir la cuña
       this.animating = false;
@@ -48,10 +49,12 @@
       this.wedgeGroup = new THREE.Group();
       this.vectorsGroup = new THREE.Group();
       this.boltsGroup = new THREE.Group();
+      this.dimensionsGroup = new THREE.Group();
       this.scene.add(this.rootGroup);
       this.scene.add(this.wedgeGroup);
       this.scene.add(this.vectorsGroup);
       this.scene.add(this.boltsGroup);
+      this.scene.add(this.dimensionsGroup);
 
       this.lastResult = null;
       this.lastInput = null;
@@ -310,6 +313,7 @@
       this._clearGroup(this.wedgeGroup);
       this._clearGroup(this.vectorsGroup);
       this._clearGroup(this.boltsGroup);
+      this._clearGroup(this.dimensionsGroup);
 
       if (!result || !result.valid) return;
 
@@ -400,6 +404,11 @@
       // 6. Pernos de Anclaje 3D
       if (this.showBolts && Array.isArray(input.bolts)) {
         this._buildBolts3D(result, input, H);
+      }
+
+      // 7. Cotas y Medidas de Dimensionamiento 3D (Altura, Ancho Cresta, Longitud Intersección)
+      if (this.showDimensions) {
+        this._buildDimensions3D(result, input, H, V0, V1, V2, V3);
       }
 
       this._applyWedgeDisplacement();
@@ -812,6 +821,119 @@
       });
     }
 
+    /**
+     * Construye un sprite de texto 3D nítido para cotas y etiquetas de dimensiones
+     */
+    _createTextSprite(text, colorHex = '#38bdf8', fontSize = 28) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 256, 64);
+      
+      // Fondo tipo píldora translúcida para lectura impecable en cualquier fondo
+      ctx.fillStyle = 'rgba(7, 9, 14, 0.82)';
+      ctx.strokeStyle = colorHex;
+      ctx.lineWidth = 2.5;
+      const r = 12;
+      ctx.beginPath();
+      ctx.roundRect(10, 10, 236, 44, r);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = colorHex;
+      ctx.font = `bold ${fontSize}px "JetBrains Mono", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 32);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      const mat = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(3.2, 0.8, 1.0);
+      return sprite;
+    }
+
+    /**
+     * Genera una línea de cota técnica tipo CAD con remates ortogonales
+     */
+    _createDimensionLine(ptA, ptB, colorHex = 0x38bdf8) {
+      const lineGroup = new THREE.Group();
+      const geom = new THREE.BufferGeometry().setFromPoints([ptA, ptB]);
+      const mat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2, depthTest: false, transparent: true, opacity: 0.9 });
+      lineGroup.add(new THREE.Line(geom, mat));
+
+      // Remates en ambos extremos (ticks de 0.4 m)
+      const dir = new THREE.Vector3().subVectors(ptB, ptA).normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+      let tickDir = new THREE.Vector3().crossVectors(dir, up).normalize();
+      if (tickDir.lengthSq() < 0.01) tickDir = new THREE.Vector3(1, 0, 0);
+      
+      const tickLen = 0.25;
+      [-tickLen, tickLen].forEach(s => {
+        const t1Geom = new THREE.BufferGeometry().setFromPoints([
+          ptA.clone().addScaledVector(tickDir, -tickLen),
+          ptA.clone().addScaledVector(tickDir, tickLen)
+        ]);
+        const t2Geom = new THREE.BufferGeometry().setFromPoints([
+          ptB.clone().addScaledVector(tickDir, -tickLen),
+          ptB.clone().addScaledVector(tickDir, tickLen)
+        ]);
+        lineGroup.add(new THREE.Line(t1Geom, mat));
+        lineGroup.add(new THREE.Line(t2Geom, mat));
+      });
+
+      return lineGroup;
+    }
+
+    /**
+     * Dibuja cotas 3D métricas: Altura del Talud H, Ancho de Cresta V1-V2 y Longitud de Intersección V0-V3
+     */
+    _buildDimensions3D(result, input, H, V0, V1, V2, V3) {
+      const dimGroup = this.dimensionsGroup;
+      const slopeAzRad = ((input.slope ? input.slope.dipDir : 180) * Math.PI) / 180.0;
+      const outDir = new THREE.Vector3(Math.sin(slopeAzRad), 0, -Math.cos(slopeAzRad)).normalize();
+      const strikeDir = new THREE.Vector3(outDir.z, 0, -outDir.x).normalize();
+
+      // 1. COTA DE ALTURA DEL TALUD H (desplazada lateralmente)
+      const maxSpan = Math.max(V1.distanceTo(V2) * 0.75, H * 0.85);
+      const hOffset = strikeDir.clone().multiplyScalar(maxSpan + 1.8);
+      const ptBottomH = new THREE.Vector3(V0.x, 0, V0.z).add(hOffset);
+      const ptTopH = new THREE.Vector3(V0.x, H, V0.z).add(hOffset);
+      dimGroup.add(this._createDimensionLine(ptBottomH, ptTopH, 0x00e5b4));
+      
+      const spriteH = this._createTextSprite(`H = ${H.toFixed(1)} m`, '#00e5b4');
+      spriteH.position.copy(ptBottomH).lerp(ptTopH, 0.5).addScaledVector(strikeDir, 1.4);
+      dimGroup.add(spriteH);
+
+      // Líneas de extensión para cota de altura
+      const extMat = new THREE.LineDashedMaterial({ color: 0x475569, dashSize: 0.3, gapSize: 0.2, depthTest: false, transparent: true, opacity: 0.6 });
+      const extLine1 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(V0.x, 0, V0.z), ptBottomH]), extMat);
+      extLine1.computeLineDistances();
+      const extLine2 = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(V0.x, H, V0.z), ptTopH]), extMat);
+      extLine2.computeLineDistances();
+      dimGroup.add(extLine1, extLine2);
+
+      // 2. COTA DE ANCHO DE CRESTA (V1 - V2)
+      const crestDist = V1.distanceTo(V2);
+      const crestOffset = outDir.clone().multiplyScalar(-1.2);
+      const ptV1Off = V1.clone().add(crestOffset);
+      const ptV2Off = V2.clone().add(crestOffset);
+      dimGroup.add(this._createDimensionLine(ptV1Off, ptV2Off, 0x38bdf8));
+
+      const spriteCrest = this._createTextSprite(`W = ${crestDist.toFixed(1)} m`, '#38bdf8');
+      spriteCrest.position.copy(ptV1Off).lerp(ptV2Off, 0.5).add(crestOffset.clone().multiplyScalar(0.9));
+      dimGroup.add(spriteCrest);
+
+      // 3. COTA DE LONGITUD DE ARISTA DE CORTE V0 -> V3
+      const intLen = V0.distanceTo(V3);
+      const midInt = V0.clone().lerp(V3, 0.5);
+      const spriteInt = this._createTextSprite(`L_int = ${intLen.toFixed(1)} m`, '#fbbf24', 24);
+      spriteInt.position.copy(midInt).add(new THREE.Vector3(0, 0.8, 0));
+      dimGroup.add(spriteInt);
+    }
+
     capturePNG() {
       this._renderFrame();
       return this.canvas.toDataURL('image/png');
@@ -873,7 +995,75 @@
         if (slider) slider.value = this.displacement.toFixed(2);
         if (badge) badge.textContent = Math.round(this.displacement * 100) + '%';
       }
+      this._updateCompassAndScaleHUD();
       this._renderFrame();
+    }
+
+    /**
+     * Sincroniza la Rosa de los Vientos / Brújula y la Escala Métrica 3D flotante
+     */
+    _updateCompassAndScaleHUD() {
+      // 1. Orientación de la Brújula (Norte Geográfico)
+      // En Three.js: X = Este (+90° azimut), Z = Sur (+180° azimut), -Z = Norte (000° azimut)
+      // Cámara en órbita: theta es el azimut horizontal de la cámara.
+      // Cuando la cámara mira a -Z, theta = 0, el Norte de la pantalla apunta derecho hacia arriba (0 deg).
+      // El ángulo de la aguja norte respecto a la vertical de pantalla es theta:
+      const needleEl = document.querySelector('.compass-needle');
+      const azLabelEl = document.getElementById('compass-az-label');
+      const slopeLabelEl = document.getElementById('compass-slope-label');
+
+      if (needleEl && azLabelEl) {
+        // Normalizar azimut de cámara (0° a 360°)
+        let camAzDeg = ((-this.spherical.theta * 180 / Math.PI) % 360 + 360) % 360;
+        // La aguja norte debe rotar opuesta a la rotación de cámara para apuntar siempre al Norte real
+        needleEl.style.transform = `rotate(${camAzDeg.toFixed(1)}deg)`;
+
+        // Formato 000°
+        const camAzStr = Math.round(camAzDeg).toString().padStart(3, '0');
+        azLabelEl.textContent = `Norte: ${camAzStr}°`;
+
+        if (slopeLabelEl && this.lastInput && this.lastInput.slope) {
+          const sDipDir = Math.round(this.lastInput.slope.dipDir || 0).toString().padStart(3, '0');
+          slopeLabelEl.textContent = `Talud: ${sDipDir}°`;
+        }
+      }
+
+      // 2. Escala Gráfica Métrica HUD
+      // Calcular cuántos metros representa la barra de escala en base a la distancia de cámara
+      const scaleValEl = document.getElementById('scale-bar-val');
+      if (scaleValEl && this.canvas) {
+        // En proyección perspectiva: ancho visible en el target W = 2 * r * tan(fov/2 * PI/180) * aspect
+        const fovRad = (this.camera.fov * Math.PI) / 180;
+        const visibleH = 2 * this.spherical.radius * Math.tan(fovRad * 0.5);
+        const rectH = this.canvas.clientHeight || 500;
+        // Metros por pixel en el plano focal del modelo:
+        const metersPerPx = visibleH / Math.max(1, rectH);
+        
+        // La barra gráfica mide 90px en desktop (65px en móvil)
+        const barPx = window.innerWidth <= 640 ? 65 : 90;
+        const rawMeters = barPx * metersPerPx;
+
+        // Redondear a números ingenieriles limpios (1, 2, 5, 10, 20, 50, 100...)
+        const exp = Math.pow(10, Math.floor(Math.log10(rawMeters)));
+        const frac = rawMeters / exp;
+        let niceMeters = exp;
+        if (frac >= 5) niceMeters = 5 * exp;
+        else if (frac >= 2) niceMeters = 2 * exp;
+        else niceMeters = exp;
+
+        // Ajustar el ancho visual exacto para que corresponda con niceMeters
+        const targetPx = niceMeters / metersPerPx;
+        const lineEl = document.querySelector('.scale-bar-line');
+        if (lineEl && targetPx > 15 && targetPx < 220) {
+          lineEl.style.width = `${Math.round(targetPx)}px`;
+        }
+
+        if (niceMeters >= 1) {
+          scaleValEl.textContent = `${Math.round(niceMeters)} m`;
+        } else {
+          scaleValEl.textContent = `${(niceMeters * 100).toFixed(0)} cm`;
+        }
+      }
     }
   }
 

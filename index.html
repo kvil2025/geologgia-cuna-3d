@@ -514,6 +514,9 @@
           <button type="button" class="tb-btn active" id="btn-toggle-vectors" title="Mostrar/Ocultar Vectores 3D de Fuerza">
             Vectores 3D
           </button>
+          <button type="button" class="tb-btn active" id="btn-toggle-dimensions" title="Mostrar/Ocultar Escala y Cotas de Dimensionamiento 3D (Altura, Ancho, Cresta)">
+            <svg class="ic"><use href="#i-target"/></svg> Cotas 3D
+          </button>
           <button type="button" class="tb-btn" id="btn-fit" title="Centrar Cámara 3D">
             Centrar
           </button>
@@ -538,6 +541,36 @@
 
       <!-- Lienzo WebGL 3D -->
       <canvas id="canvas3d"></canvas>
+
+      <!-- Rosa de los Vientos / Brújula 3D Flotante GeologgIA -->
+      <div id="compass-rose-3d" title="Orientación Geográfica del Modelo 3D (Click para alinear al Norte)">
+        <div class="compass-dial" id="compass-dial">
+          <div class="compass-needle">
+            <span class="needle-tip-n">N</span>
+            <span class="needle-tip-s">S</span>
+          </div>
+          <span class="compass-cardinal card-e">E</span>
+          <span class="compass-cardinal card-w">W</span>
+        </div>
+        <div class="compass-meta">
+          <span id="compass-az-label">Norte: 000°</span>
+          <span id="compass-slope-label" class="compass-sub-label">Talud: 180°</span>
+        </div>
+      </div>
+
+      <!-- Barra de Escala Métrica 3D HUD -->
+      <div id="scale-bar-3d" title="Escala gráfica calibrada al zoom de cámara 3D">
+        <div class="scale-bar-line">
+          <span class="scale-tick tick-0"></span>
+          <span class="scale-tick tick-mid"></span>
+          <span class="scale-tick tick-end"></span>
+        </div>
+        <div class="scale-bar-labels">
+          <span>0</span>
+          <span id="scale-bar-val">5 m</span>
+        </div>
+        <div class="scale-bar-sub">Escala Métrica 3D</div>
+      </div>
 
       <!-- Barra Inferior: Extracción de Cuña + InfoViewer -->
       <div id="hud-bottom">

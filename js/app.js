@@ -739,6 +739,26 @@
       viewer3d.renderModel(currentResult, currentInput, false);
     });
 
+    if ($('btn-toggle-dimensions')) {
+      $('btn-toggle-dimensions').addEventListener('click', (e) => {
+        if (!viewer3d) return;
+        viewer3d.showDimensions = !viewer3d.showDimensions;
+        e.currentTarget.classList.toggle('active', viewer3d.showDimensions);
+        viewer3d.renderModel(currentResult, currentInput, false);
+      });
+    }
+
+    // Clic en la Rosa de los Vientos para alinear automáticamente la vista al Norte (000°)
+    if ($('compass-rose-3d')) {
+      $('compass-rose-3d').addEventListener('click', () => {
+        if (!viewer3d) return;
+        // Coloca la cámara mirando exactamente hacia el Norte (-Z)
+        viewer3d.spherical.theta = 0;
+        viewer3d.spherical.phi = 1.05;
+        viewer3d._updateCameraPosition();
+      });
+    }
+
     $('btn-fit').addEventListener('click', () => {
       if (viewer3d) viewer3d.fitView();
     });
